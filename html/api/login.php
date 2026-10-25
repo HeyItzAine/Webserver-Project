@@ -1,8 +1,8 @@
 <?php
-$servername = "44.209.52.21";  // DB 1 IP
-$username = "repl";
-$password = "replpassword";  // Change this to your actual password
-$dbname = "registration_site";
+$servername = getenv('DB_HOST') ?: '127.0.0.1';
+$username = getenv('DB_USER') ?: '';
+$password = getenv('DB_PASSWORD') ?: '';
+$dbname = getenv('DB_NAME') ?: 'registration_site';
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
@@ -14,6 +14,11 @@ if ($conn->connect_error) {
 }
 
 header('Content-Type: application/json');
+
+if ($username === '' || $password === '') {
+    error_log("Database credentials are not configured via environment variables.");
+    die(json_encode(["success" => false, "message" => "Database configuration error."]));
+}
 
 // Get POST data
 $data = json_decode(file_get_contents("php://input"), true);
