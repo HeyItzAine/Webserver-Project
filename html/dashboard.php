@@ -8,9 +8,9 @@ if (!isset($_SESSION['user'])) {
 }
 
 $user = $_SESSION['user'];
-$firstName = $user['firstName'];
-$lastName = $user['lastName'];
-$email = $user['email'];
+$firstName = htmlspecialchars($user['firstName'], ENT_QUOTES, 'UTF-8');
+$lastName = htmlspecialchars($user['lastName'], ENT_QUOTES, 'UTF-8');
+$email = htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8');
 ?>
 
 <!DOCTYPE html>
@@ -89,7 +89,7 @@ $email = $user['email'];
         document.getElementById('logoutButton').addEventListener('click', function() {
             // Perform logout logic here (e.g., making an API call to logout)
             // Then redirect to index.html
-            window.location.href = '/index.html';
+            window.location.href = '/api/logout.php';
         });
     </script>
 </body>
