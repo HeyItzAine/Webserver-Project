@@ -1,8 +1,8 @@
 <?php
-$servername = "44.209.52.21";  // DB 1 IP
-$username = "repl";
-$password = "replpassword";  // Change this to your actual password
-$dbname = "registration_site";
+$servername = getenv('DB_HOST') ?: '127.0.0.1';
+$username = getenv('DB_USER') ?: '';
+$password = getenv('DB_PASSWORD') ?: '';
+$dbname = getenv('DB_NAME') ?: 'registration_site';
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
@@ -13,21 +13,33 @@ if ($conn->connect_error) {
     die(json_encode(["success" => false, "message" => "Database connection failed."]));
 }
 
+header('Content-Type: application/json');
+
+if ($username === '' || $password === '') {
+    error_log("Database credentials are not configured via environment variables.");
+    die(json_encode(["success" => false, "message" => "Database configuration error."]));
+}
+
 // Get POST data
 $data = json_decode(file_get_contents("php://input"), true);
 
 $email = $data['email'] ?? '';
 $pass = $data['password'] ?? '';
 
-// Prevent SQL injection
-$email = $conn->real_escape_string($email);
-$pass = $conn->real_escape_string($pass);
-
+$isSecure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+session_set_cookie_params([
+    'httponly' => true,
+    'secure' => $isSecure,
+    'samesite' => 'Lax',
+]);
 session_start(); // Start the session
 
 // Check credentials
-$sql = "SELECT * FROM users WHERE email='$email'";
-$result = $conn->query($sql);
+$sql = "SELECT first_name, last_name, email, password FROM users WHERE email = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
@@ -41,6 +53,7 @@ if ($result->num_rows > 0) {
             'lastName' => $user['last_name'],
             'email' => $user['email'],
         ];
+        session_regenerate_id(true);
 
         // Return redirect URL for the frontend
         echo json_encode([
@@ -55,5 +68,6 @@ if ($result->num_rows > 0) {
     echo json_encode(["success" => false, "message" => "Invalid credentials"]);
 }
 
+$stmt->close();
 $conn->close();
 ?>
